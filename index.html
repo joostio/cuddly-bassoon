@@ -6,96 +6,59 @@
   <title>HOI4 Equipment Name Generator</title>
   <style>
     :root { color-scheme: dark; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: #0b0d10;
-      color: #e8eef5;
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0d10; color:#e8eef5; }
+    .wrap { min-height:100vh; display:grid; place-items:center; padding:24px; }
+    .card { width:min(1180px,100%); background:#121720; border:1px solid #1c2634; border-radius:18px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin:0 0 8px; font-size:18px; }
+    p { margin:0 0 16px; font-size:13px; opacity:.8; line-height:1.4; }
+    .grid { display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr auto; gap:12px; align-items:end; }
+    label { display:block; font-size:12px; opacity:.8; margin-bottom:6px; }
+    input, select {
+      width:100%; background:#0f141c; border:1px solid #1c2634; color:#e8eef5;
+      border-radius:12px; padding:10px 12px; font-size:14px; outline:none;
     }
-    .wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-    .card {
-      width: min(980px, 100%);
-      background: #121720;
-      border: 1px solid #1c2634;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    }
-    h1 { font-size: 18px; margin: 0 0 8px; }
-    p  { margin: 0 0 16px; opacity: .8; font-size: 13px; line-height: 1.4; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
-    label { display:block; font-size: 12px; opacity: .8; margin-bottom: 6px; }
-    select, input {
-      width: 100%;
-      background: #0f141c;
-      border: 1px solid #1c2634;
-      color: #e8eef5;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 14px;
-      outline: none;
-    }
-    button {
-      background: #2b7cff;
-      color: white;
-      border: 0;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    button:hover { filter: brightness(1.05); }
-    .out {
-      margin-top: 16px;
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid #1c2634;
-      background: #0f141c;
-    }
-    .name { font-size: 20px; font-weight: 800; letter-spacing: .2px; }
-    .meta { margin-top: 6px; font-size: 12px; opacity: .8; }
-    .row { display:flex; gap:10px; margin-top: 10px; flex-wrap: wrap; }
-    .pill {
-      font-size: 12px; opacity: .85;
-      padding: 6px 10px;
-      border: 1px solid #1c2634;
-      border-radius: 999px;
-      background: #0b0d10;
-    }
-    .hint { margin-top: 12px; font-size: 12px; opacity: .65; }
-    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } button { width: 100%; } }
+    button { background:#2b7cff; color:white; border:0; padding:10px 14px; border-radius:12px; font-weight:800; cursor:pointer; white-space:nowrap; }
+    button:hover { filter:brightness(1.05); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .out { margin-top:16px; padding:14px; border-radius:14px; border:1px solid #1c2634; background:#0f141c; }
+    .name { font-size:20px; font-weight:900; letter-spacing:.2px; }
+    .meta { margin-top:6px; font-size:12px; opacity:.8; }
+    .row { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+    .pill { font-size:12px; opacity:.85; padding:6px 10px; border:1px solid #1c2634; border-radius:999px; background:#0b0d10; }
+    .tools { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+    .ghost { background:transparent; border:1px solid #1c2634; color:#e8eef5; }
+    .hint { margin-top:12px; font-size:12px; opacity:.65; }
+    .warn { margin-top:10px; font-size:12px; opacity:.8; }
+    @media (max-width: 1040px){ .grid{ grid-template-columns:1fr; } button{ width:100%; } }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>HOI4 Equipment Name Generator</h1>
-      <p>Pick a country, equipment type, and year. You’ll get a random, era-flavored military name you can paste into Hearts of Iron IV.</p>
+      <p>Search a country tag, pick category + year, toggle <b>Strict</b> vs <b>Flavor</b>, generate a random name.</p>
 
       <div class="grid">
         <div>
-          <label for="country">Country</label>
-          <select id="country">
-            <option value="USA">United States</option>
-            <option value="GER">Germany</option>
-            <option value="UK">United Kingdom</option>
-            <option value="USSR">Soviet Union</option>
-            <option value="JPN">Japan</option>
-          </select>
+          <label for="countryTag">Country tag (search)</label>
+          <input id="countryTag" list="countryTags" placeholder="Start typing: GER, USA, SOV, ENG..." value="GER" autocomplete="off" />
+          <datalist id="countryTags"></datalist>
+          <div class="hint">You can also type any custom tag (mods) — it will fall back gracefully.</div>
         </div>
 
         <div>
-          <label for="type">Equipment</label>
-          <select id="type">
-            <option value="tank">Tank</option>
-            <option value="plane">Plane</option>
-          </select>
+          <label for="category">Category</label>
+          <select id="category"></select>
+        </div>
+
+        <div>
+          <label for="subtype">Role / Hull</label>
+          <select id="subtype"></select>
         </div>
 
         <div>
           <label for="year">Year</label>
-          <input id="year" type="number" min="1900" max="2100" value="1940" />
+          <input id="year" type="number" min="1900" max="2100" value="1941" />
         </div>
 
         <div>
@@ -103,170 +66,353 @@
         </div>
       </div>
 
-      <div class="out" id="out" aria-live="polite">
+      <div class="tools">
+        <div style="min-width:240px;">
+          <label for="mode">Naming mode</label>
+          <select id="mode">
+            <option value="strict" selected>Strict (formats like real designations)</option>
+            <option value="flavor">Flavor (more variety, still country/era-coded)</option>
+          </select>
+        </div>
+        <button id="copy" type="button" class="ghost">Copy name</button>
+        <button id="reroll" type="button" class="ghost">Reroll</button>
+      </div>
+
+      <div class="out" aria-live="polite">
         <div class="name" id="name">—</div>
-        <div class="meta" id="meta">Choose options and hit Generate.</div>
+        <div class="meta" id="meta">Pick options and hit Generate.</div>
         <div class="row" id="tags"></div>
-        <div class="hint">Tip: you can edit the name lists inside this file to match your preferred level of historical accuracy.</div>
+        <div class="warn" id="warn"></div>
       </div>
     </div>
   </div>
 
-  <script>
-    // ---- Helpers ----
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const clampYear = (y) => {
-      if (!Number.isFinite(y)) return 1936;
-      if (y < 1900) return 1900;
-      if (y > 2100) return 2100;
-      return Math.trunc(y);
-    };
+<script>
+/* ------------------ Searchable tag list (extend anytime) ------------------ */
+const TAGS = [
+  ["GER","Germany"], ["USA","United States"], ["SOV","Soviet Union"], ["ENG","United Kingdom"],
+  ["FRA","France"], ["ITA","Italy"], ["JAP","Japan"], ["CHI","China"], ["MAN","Manchukuo"],
+  ["SWE","Sweden"], ["NOR","Norway"], ["DEN","Denmark"], ["FIN","Finland"], ["ICE","Iceland"],
+  ["SPR","Spain"], ["SPB","Spain (Carlist)"], ["SPD","Spain (Republic)"], ["POR","Portugal"],
+  ["HOL","Netherlands"], ["BEL","Belgium"], ["LUX","Luxembourg"],
+  ["AUS","Austria"], ["HUN","Hungary"], ["CZE","Czechoslovakia"], ["POL","Poland"], ["ROM","Romania"],
+  ["YUG","Yugoslavia"], ["BUL","Bulgaria"], ["GRE","Greece"], ["ALB","Albania"], ["TUR","Turkey"],
+  ["SWI","Switzerland"], ["EST","Estonia"], ["LAT","Latvia"], ["LIT","Lithuania"], ["IRE","Ireland"],
+  ["UKR","Ukraine"], ["BLR","Belarus"], ["GEO","Georgia"], ["ARM","Armenia"], ["AZR","Azerbaijan"],
+  ["EGY","Egypt"], ["IRQ","Iraq"], ["IRN","Iran"], ["SAU","Saudi Arabia"], ["YEM","Yemen"],
+  ["OMA","Oman"], ["SYR","Syria"], ["JOR","Jordan"], ["ISR","Israel"],
+  ["LBA","Libya"], ["TUN","Tunisia"], ["ALG","Algeria"], ["MOR","Morocco"],
+  ["SAF","South Africa"], ["ETH","Ethiopia"],
+  ["CAN","Canada"], ["MEX","Mexico"], ["BRA","Brazil"], ["ARG","Argentina"], ["CHL","Chile"],
+  ["COL","Colombia"], ["PER","Peru"], ["VEN","Venezuela"], ["BOL","Bolivia"], ["PAR","Paraguay"], ["URU","Uruguay"],
+  ["RAJ","British Raj"], ["AST","Australia"], ["NZL","New Zealand"],
+  ["SIA","Siam/Thailand"], ["PHI","Philippines"], ["INS","Dutch East Indies/Indonesia"],
+  ["MAL","Malaya"], ["VIE","Vietnam"], ["CAM","Cambodia"], ["LAO","Laos"],
+  ["KOR","Korea"], ["MON","Mongolia"], ["TAN","Tannu Tuva"], ["AFG","Afghanistan"], ["NEP","Nepal"], ["BHU","Bhutan"],
+];
+document.getElementById("countryTags").innerHTML =
+  TAGS.map(([t,n]) => `<option value="${t}">${n}</option>`).join("");
 
-    // Era buckets: tweak as you like for HOI4 mods/timeframes
-    function eraFor(year) {
-      if (year <= 1935) return "early";
-      if (year <= 1945) return "ww2";
-      if (year <= 1959) return "post";
-      return "late";
-    }
+/* ------------------ Catalog: “all the common HOI4 nameable stuff” ------------------ */
+const CATALOG = [
+  { key:"tank", label:"Tank", sub:[
+    ["lt","Light Tank"], ["mt","Medium Tank"], ["ht","Heavy Tank"], ["sht","Super-Heavy Tank"],
+    ["mBt","Main Battle Tank"], // for late years / mods
+    ["td","Tank Destroyer"], ["spg","Self-Propelled Gun"], ["spaa","Self-Propelled AA"]
+  ]},
+  { key:"plane", label:"Aircraft", sub:[
+    ["fighter","Fighter"], ["heavy_fighter","Heavy Fighter"], ["cas","CAS"], ["nav","Naval Bomber"],
+    ["tac","Tactical Bomber"], ["strat","Strategic Bomber"], ["recon","Recon"],
+    ["jet_fighter","Jet Fighter"], ["jet_bomber","Jet Bomber"]
+  ]},
+  { key:"ship", label:"Ship (Surface)", sub:[
+    ["dd","Destroyer"], ["cl","Light Cruiser"], ["ca","Heavy Cruiser"],
+    ["bc","Battlecruiser"], ["bb","Battleship"], ["cv","Carrier"]
+  ]},
+  { key:"sub", label:"Submarine", sub:[
+    ["ss","Submarine"], ["ss_long","Long-Range Submarine"], ["ss_modern","Modern Submarine"]
+  ]},
+  // Optional “flavor nameables” (useful for mods / immersion)
+  { key:"ground", label:"Ground Equipment (Flavor)", sub:[
+    ["rifle","Infantry Equipment"], ["ar","Support Weapon"], ["at","Anti-Tank"], ["aa","Anti-Air"],
+    ["arty","Artillery"], ["truck","Truck"], ["mech","Mechanized"], ["train","Train"]
+  ]},
+  { key:"naval_eq", label:"Naval Equipment (Flavor)", sub:[
+    ["torp","Torpedo"], ["depth","Depth Charge"], ["mine","Naval Mine"], ["radar","Radar Set"]
+  ]},
+];
 
-    // ---- Name logic ----
-    // This generator is "era-flavored" and tries to sound plausible.
-    // You can swap the lists for exact historical series if you prefer.
-    const DATA = {
-      USA: {
-        label: "United States",
-        tank: {
-          early: () => `M${pick([1,2,3,4,5,6,7])} ${pick(["Combat Car","Light Tank","Medium Tank"])}`,
-          ww2:   () => `${pick(["M3","M4","M5","M10","M18","M26"])} ${pick(["Stuart","Lee","Sherman","Wolverine","Hellcat","Pershing"])}`,
-          post:  () => `${pick(["M46","M47","M48","M60"])} ${pick(["Patton","Patton","Patton","Main Battle Tank"])}`,
-          late:  () => `${pick(["M1","M1A1","M1A2"])} ${pick(["Abrams","Abrams","SEP"])}`,
-        },
-        plane: {
-          early: () => `${pick(["Curtiss","Boeing","Douglas","Grumman"])} ${pick(["P-26","P-35","P-36","B-10","A-17"])}`,
-          ww2:   () => `${pick(["P-38","P-39","P-40","P-47","P-51","B-17","B-24","B-25","B-29","F4F","F6F","F4U"])} ${pick(["Lightning","Airacobra","Warhawk","Thunderbolt","Mustang","Flying Fortress","Liberator","Mitchell","Superfortress","Wildcat","Hellcat","Corsair"])}`,
-          post:  () => `${pick(["F-80","F-84","F-86","B-47","B-52"]) } ${pick(["Shooting Star","Thunderjet","Sabre","Stratojet","Stratofortress"])}`,
-          late:  () => `${pick(["F-4","F-14","F-15","F-16","F/A-18","B-2"]) } ${pick(["Phantom II","Tomcat","Eagle","Fighting Falcon","Hornet","Spirit"])}`,
-        }
-      },
+const elCategory = document.getElementById("category");
+const elSubtype = document.getElementById("subtype");
 
-      GER: {
-        label: "Germany",
-        tank: {
-          early: () => `Panzerkampfwagen ${pick(["I","II","III","IV"])} Ausf. ${pick(["A","B","C","D","E","F"])}`,
-          ww2:   () => `${pick(["Panzer IV","Panther","Tiger I","Tiger II","StuG III","Jagdpanther"])} ${pick(["Ausf. H","Ausf. G","Ausf. E","Ausf. B","Ausf. G","Ausf. G"])}`,
-          post:  () => `${pick(["Leopard 1","M48 (Bundeswehr)","Kanonenjagdpanzer"])} ${pick(["A1","A2","—"])}`,
-          late:  () => `${pick(["Leopard 2","Leopard 2A4","Leopard 2A6","Leopard 2A7"])} ${pick(["—","—","—","—"])}`,
-        },
-        plane: {
-          early: () => `${pick(["Heinkel","Junkers","Dornier","Messerschmitt"])} ${pick(["He 51","Ju 52","Do 17","Bf 109"])}`,
-          ww2:   () => `${pick(["Bf 109","Fw 190","Me 262","Ju 87","Ju 88","He 111"])} ${pick(["—","—","Schwalbe","Stuka","—","—"])}`,
-          post:  () => `${pick(["F-84F (Luftwaffe)","F-86 (Luftwaffe)","G.91"])} ${pick(["—","—","—"])}`,
-          late:  () => `${pick(["F-4F","Tornado","Eurofighter"])} ${pick(["Phantom II","IDS","Typhoon"])}`,
-        }
-      },
+function fillCategories(){
+  elCategory.innerHTML = CATALOG.map(c => `<option value="${c.key}">${c.label}</option>`).join("");
+}
+function fillSubtypes(){
+  const cat = CATALOG.find(c => c.key === elCategory.value) || CATALOG[0];
+  elSubtype.innerHTML = cat.sub.map(([k,l]) => `<option value="${k}">${l}</option>`).join("");
+}
 
-      UK: {
-        label: "United Kingdom",
-        tank: {
-          early: () => `${pick(["Vickers","Cruiser","Infantry Tank"])} Mk. ${pick(["I","II","III","IV"])}`,
-          ww2:   () => `${pick(["Matilda II","Valentine","Churchill","Cromwell","Comet"])} Mk. ${pick(["II","III","IV","VII","I"])}`,
-          post:  () => `${pick(["Centurion","Conqueror"])} Mk. ${pick(["3","5","8","—"])}`,
-          late:  () => `${pick(["Chieftain","Challenger 1","Challenger 2"])} ${pick(["Mk. 5","Mk. 10","—"])}`,
-        },
-        plane: {
-          early: () => `${pick(["Hawker","Supermarine","Bristol","Avro"])} ${pick(["Fury","Gladiator","Blenheim","Anson"])}`,
-          ww2:   () => `${pick(["Spitfire","Hurricane","Mosquito","Lancaster","Typhoon","Tempest"])} Mk. ${pick(["I","V","IX","XVI","—","—"])}`,
-          post:  () => `${pick(["Meteor","Vampire","Canberra"])} ${pick(["F.3","FB.5","B.2"])}`,
-          late:  () => `${pick(["Harrier","Tornado","Typhoon"])} ${pick(["GR.3","GR.4","FGR.4"])}`,
-        }
-      },
+fillCategories();
+fillSubtypes();
+elCategory.addEventListener("change", () => { fillSubtypes(); render(); });
 
-      USSR: {
-        label: "Soviet Union",
-        tank: {
-          early: () => `${pick(["T-26","BT-5","BT-7"])} ${pick(["Model 1933","Model 1935","Model 1937"])}`,
-          ww2:   () => `${pick(["T-34","T-34-85","KV-1","IS-2","SU-76","SU-85","SU-100"])} ${pick(["Model 1941","Model 1943","Model 1942","Model 1944","—","—","—"])}`,
-          post:  () => `${pick(["T-44","T-54","T-55","T-62"])} ${pick(["—","—","—","—"])}`,
-          late:  () => `${pick(["T-64","T-72","T-80","T-90"])} ${pick(["A","B","U","—"])}`,
-        },
-        plane: {
-          early: () => `${pick(["Polikarpov","Tupolev","Ilyushin"])} ${pick(["I-15","I-16","SB-2","DB-3"])}`,
-          ww2:   () => `${pick(["Yak-1","Yak-3","Yak-9","La-5","La-7","Il-2","Pe-2"])} ${pick(["—","—","—","FN","—","Shturmovik","—"])}`,
-          post:  () => `${pick(["MiG-15","MiG-17","MiG-19","Tu-16","Tu-95"])} ${pick(["—","—","—","Badger","Bear"])}`,
-          late:  () => `${pick(["MiG-21","MiG-23","MiG-29","Su-27","Su-25"])} ${pick(["—","—","—","Flanker","Frogfoot"])}`,
-        }
-      },
+/* ------------------ Helpers ------------------ */
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randInt = (min, max) => Math.floor(Math.random()*(max-min+1))+min;
 
-      JPN: {
-        label: "Japan",
-        tank: {
-          early: () => `Type ${pick([89,95,97])} ${pick(["I-Go","Ha-Go","Chi-Ha"])}`,
-          ww2:   () => `Type ${pick([97,1,2,3,4])} ${pick(["Chi-Ha","Chi-He","Chi-Nu","Chi-To","Chi-Ri"])}`,
-          post:  () => `${pick(["STA-1","STA-2","Type 61"])}`,
-          late:  () => `${pick(["Type 74","Type 90","Type 10"])}`,
-        },
-        plane: {
-          early: () => `${pick(["Nakajima","Mitsubishi","Aichi","Kawasaki"])} ${pick(["Ki-10","Ki-27","A5M","D1A"])}`,
-          ww2:   () => `${pick(["A6M","Ki-43","Ki-61","Ki-84","D3A","B5N","G4M"])} ${pick(["Zero","Hayabusa","Hien","Hayate","Val","Kate","Betty"])}`,
-          post:  () => `${pick(["F-86F (JASDF)","F-104J","F-1"])} ${pick(["Sabre","Starfighter","—"])}`,
-          late:  () => `${pick(["F-4EJ","F-15J","F-2"])} ${pick(["Phantom II","Eagle","—"])}`,
-        }
+function clampYear(y){
+  y = Number(y);
+  if (!Number.isFinite(y)) return 1936;
+  if (y < 1900) return 1900;
+  if (y > 2100) return 2100;
+  return Math.trunc(y);
+}
+function eraFor(y){
+  if (y <= 1935) return "interwar";
+  if (y <= 1945) return "ww2";
+  if (y <= 1960) return "early_coldwar";
+  return "late";
+}
+function styleFor(tag){
+  tag = (tag||"").toUpperCase().trim();
+  if (["USA","ENG","CAN","AST","NZL","SAF","IRE"].includes(tag)) return "EN";
+  if (["GER","AUS"].includes(tag)) return "DE";
+  if (["SOV","UKR","BLR","POL","CZE","HUN","ROM","BUL","YUG","GRE","LAT","LIT","EST"].includes(tag)) return "SL";
+  if (["JAP"].includes(tag)) return "JP";
+  if (["ITA"].includes(tag)) return "IT";
+  if (["FRA","BEL","LUX"].includes(tag)) return "FR";
+  return "GEN";
+}
+function tagToLabel(tag){
+  tag = (tag||"").toUpperCase().trim();
+  const found = TAGS.find(([t]) => t === tag);
+  return found ? found[1] : tag;
+}
+
+/* ------------------ Strict naming primitives (country-coded) ------------------ */
+function strictDesignation(tag, year, category, subtype){
+  const era = eraFor(year);
+  const style = styleFor(tag);
+
+  // Handy pools
+  const ausf = ["A","B","C","D","E","F","G","H","J"];
+  const mk = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
+  const model = ["Model 1933","Model 1935","Model 1937","Model 1940","Model 1941","Model 1943","Model 1944"];
+  const prot = ["Prototype","Pre-series","Trial"];
+
+  // TANKS
+  if (category === "tank"){
+    if (style === "DE"){
+      if (era === "ww2"){
+        const base = pick(["Panzerkampfwagen III","Panzerkampfwagen IV","Panther","Tiger","StuG","Jagdpanther"]);
+        return `${base} Ausf. ${pick(ausf)}`;
       }
-    };
-
-    function generateName(countryCode, type, year) {
-      const y = clampYear(year);
-      const era = eraFor(y);
-      const c = DATA[countryCode];
-      if (!c || !c[type] || !c[type][era]) return { name: "No data for that selection.", meta: "" };
-
-      const name = c[type][era]().replace(/\s+/g, " ").trim();
-      const meta = `${c.label} • ${type.toUpperCase()} • Year ${y} • Era: ${era.toUpperCase()}`;
-
-      const tags = [];
-      if (type === "tank") tags.push("Armor");
-      if (type === "plane") tags.push("Air");
-      if (era === "ww2") tags.push("WWII");
-      if (era === "early") tags.push("Interwar");
-      if (era === "post") tags.push("Early Cold War");
-      if (era === "late") tags.push("Late Cold War+");
-
-      return { name, meta, tags };
+      return `Panzerkampfwagen ${pick(["I","II","III","IV"])} Ausf. ${pick(ausf)}`;
     }
-
-    // ---- UI wiring ----
-    const elCountry = document.getElementById("country");
-    const elType = document.getElementById("type");
-    const elYear = document.getElementById("year");
-    const elName = document.getElementById("name");
-    const elMeta = document.getElementById("meta");
-    const elTags = document.getElementById("tags");
-    const elBtn = document.getElementById("gen");
-
-    function render() {
-      const country = elCountry.value;
-      const type = elType.value;
-      const year = Number(elYear.value);
-      const out = generateName(country, type, year);
-
-      elName.textContent = out.name;
-      elMeta.textContent = out.meta || "";
-
-      elTags.innerHTML = "";
-      (out.tags || []).forEach(t => {
-        const d = document.createElement("div");
-        d.className = "pill";
-        d.textContent = t;
-        elTags.appendChild(d);
-      });
+    if (style === "SL"){
+      if (era === "interwar") return pick([`BT-${randInt(2,9)}`, `T-${randInt(12,28)}`]);
+      if (era === "ww2") return pick([`T-34`, `T-34-85`, `KV-1`, `IS-2`, `SU-85`, `SU-100`]);
+      if (era === "early_coldwar") return pick([`T-44`, `T-54`, `T-55`, `T-62`]);
+      return pick([`T-64`, `T-72`, `T-80`, `T-90`]);
     }
+    if (style === "JP"){
+      const type = (era==="interwar") ? pick([89,95,97]) : (era==="ww2") ? pick([97,1,2,3,4]) : (era==="early_coldwar") ? pick([61,74]) : pick([90,10]);
+      const nick = pick(["Ha-Go","Chi-Ha","Chi-He","Chi-Nu","Chi-To","Chi-Ri","I-Go"]);
+      return `Type ${type} ${nick}`;
+    }
+    if (style === "IT"){
+      if (era === "ww2") return pick([`M13/40`, `M14/41`, `M15/42`, `P26/40`]);
+      return pick([`Carro Armato M${randInt(6,15)}/${randInt(34,40)}`, `Semovente da 75/18`]);
+    }
+    if (style === "FR"){
+      return pick([`Char B1 bis`, `SOMUA S35`, `Renault R35`, `Hotchkiss H35`]);
+    }
+    if (style === "EN"){
+      if (tag === "USA" || tag === "CAN"){
+        // Keep it “designation-y”
+        if (era === "interwar") return pick([`M2 Light Tank`, `M2 Medium Tank`, `T${randInt(1,30)} ${pick(prot)}`]);
+        if (era === "ww2") return pick([`M3 Stuart`, `M3 Lee`, `M4 Sherman`, `M10 Wolverine`, `M18 Hellcat`, `M26 Pershing`]);
+        if (era === "early_coldwar") return pick([`M46 Patton`, `M47 Patton`, `M48 Patton`, `M60`]);
+        return pick([`M1 Abrams`, `M1A1 Abrams`, `M1A2 Abrams`]);
+      }
+      // UK-ish
+      return pick([`${pick(["Matilda","Valentine","Churchill","Cromwell","Comet"])} Mk. ${pick(mk)}`, `A${randInt(9,45)} Mk. ${pick(mk)}`]);
+    }
+    // Generic strict
+    return `${tag} ${subtype.toUpperCase()}-${randInt(1,99)} (${year})`;
+  }
 
-    elBtn.addEventListener("click", render);
-    [elCountry, elType, elYear].forEach(el => el.addEventListener("change", render));
+  // AIRCRAFT
+  if (category === "plane"){
+    if (style === "DE") return pick([`Bf ${randInt(100, 300)}`, `Fw ${randInt(180, 300)}`, `Ju ${randInt(80, 200)}`, `He ${randInt(100, 300)}`, (era==="ww2"?`Me ${randInt(200, 400)}`:`Do ${randInt(10, 30)}`)]);
+    if (style === "SL") return pick([`Yak-${randInt(1,15)}`, `La-${randInt(3,15)}`, `MiG-${randInt(1,31)}`, `Il-${randInt(2,40)}`, `Tu-${randInt(2,160)}`]);
+    if (style === "JP") return pick([`A6M`, `Ki-${randInt(27,100)}`, `D3A`, `B5N`]);
+    if (style === "IT") return pick([`Macchi C.${randInt(200,205)}`, `Fiat G.${randInt(50,60)}`, `SM.${randInt(79,90)}`]);
+    if (style === "FR") return pick([`D.${randInt(500,600)}`, `MB.${randInt(150,200)}`, `Potez ${randInt(60,80)}`]);
+    if (style === "EN"){
+      if (tag === "USA" || tag === "CAN"){
+        if (era === "late") return pick([`F-${randInt(4,22)}`, `B-${randInt(47,2+60)}`]);
+        return pick([`P-${randInt(26,80)}`, `B-${randInt(10,60)}`]);
+      }
+      return pick([`Spitfire Mk. ${pick(["I","V","IX","XVI"])}`, `Hurricane Mk. ${pick(["I","II"])}`, `Lancaster Mk. ${pick(["I","III"])}`]);
+    }
+    return `${tag}-${subtype.toUpperCase()}-${randInt(1,99)} (${year})`;
+  }
 
-    // First render
-    render();
-  </script>
+  // SHIPS (surface)
+  if (category === "ship"){
+    if (style === "DE") return `${pick(["Zerstörer","Kreuzer","Schlachtschiff","Flugzeugträger"])} ${randInt(1, 30)} (${year})`;
+    if (style === "EN") return `${pick(["HMS","USS","HMCS","HMAS"])} ${pick(["Valiant","Ark Royal","King George","Illustrious","Victorious","Dreadnought"])} (${year})`;
+    if (style === "SL") return `Project ${randInt(10,80)} ${subtype.toUpperCase()} (${year})`;
+    if (style === "JP") return `${pick(["IJN","JS"]) } ${pick(["Kagerō","Fubuki","Mogami","Yamato","Shōkaku","Sōryū"])} (${year})`;
+    return `${tag} ${subtype.toUpperCase()}-${randInt(1,40)} (${year})`;
+  }
+
+  // SUBS
+  if (category === "sub"){
+    if (style === "DE") return `U-${randInt(1,600)} (${year})`;
+    if (style === "EN") return `${pick(["T","S","U","V"])}-Class Submarine (${year})`;
+    if (style === "SL") return `Project ${randInt(200,700)} Submarine (${year})`;
+    if (style === "JP") return `I-${randInt(1,400)} (${year})`;
+    return `${tag} SS-${randInt(1,80)} (${year})`;
+  }
+
+  // Flavor-only categories still get “strict-ish” formatting
+  return `${tag} ${subtype.toUpperCase()}-${randInt(1,999)} (${year})`;
+}
+
+/* ------------------ Flavor naming (more variety, still grounded) ------------------ */
+function flavorName(tag, year, category, subtype){
+  const era = eraFor(year);
+  const style = styleFor(tag);
+
+  const adjectives = ["Iron","Steel","Thunder","Storm","Vigilant","Resolute","Crimson","Midnight","Rapid","Silent","Valiant","Feral","Dire","Arctic","Desert"];
+  const animals = ["Wolf","Bear","Eagle","Falcon","Raven","Tiger","Lion","Viper","Shark","Orca","Panther","Fox","Stag","Boar","Serpent"];
+  const myth = ["Ares","Thor","Odin","Hades","Mars","Athena","Hera","Freya","Ra","Anubis","Set","Perun"];
+  const places = ["Danube","Rhine","Volga","Dnieper","Sakura","Adriatic","Baltic","Pacific","Atlantic","Carpathian","Sahara","Ardennes","Aegean"];
+
+  // Country-coded flavor bits
+  const deWords = ["Sturm","Donner","Eisen","Blitz","Adler","Löwe","Seewolf"];
+  const slWords = ["Grom","Burevestnik","Sokol","Medved","Buran","Varyag","Zarya"];
+  const jpWords = ["Kaze","Tora","Ryu","Kumo","Haya","Sakura","Kitsune"];
+  const itWords = ["Fulmine","Leone","Aquila","Folgore","Tempesta","Lupo"];
+  const frWords = ["Vaillant","Aigle","Foudre","Renard","Lynx","Glorieuse"];
+  const enWords = ["Vanguard","Valiant","Indomitable","Gallant","Defiant","Bulldog"];
+
+  const roleLabel = {
+    tank: { lt:"Light Tank", mt:"Medium Tank", ht:"Heavy Tank", sht:"Super-Heavy Tank", mBt:"MBT", td:"Tank Destroyer", spg:"SPG", spaa:"SPAA" },
+    plane:{ fighter:"Fighter", heavy_fighter:"Heavy Fighter", cas:"CAS", nav:"Naval Bomber", tac:"Tactical Bomber", strat:"Strategic Bomber", recon:"Recon", jet_fighter:"Jet Fighter", jet_bomber:"Jet Bomber" },
+    ship: { dd:"Destroyer", cl:"Light Cruiser", ca:"Heavy Cruiser", bc:"Battlecruiser", bb:"Battleship", cv:"Carrier" },
+    sub:  { ss:"Submarine", ss_long:"Long-range Sub", ss_modern:"Modern Sub" },
+    ground:{ rifle:"Infantry Eq.", ar:"Support Weapon", at:"Anti-Tank", aa:"Anti-Air", arty:"Artillery", truck:"Truck", mech:"Mechanized", train:"Train" },
+    naval_eq:{ torp:"Torpedo", depth:"Depth Charge", mine:"Naval Mine", radar:"Radar Set" }
+  };
+
+  const label = (roleLabel[category] && roleLabel[category][subtype]) ? roleLabel[category][subtype] : subtype;
+
+  let cWord = pick(enWords);
+  if (style === "DE") cWord = pick(deWords);
+  if (style === "SL") cWord = pick(slWords);
+  if (style === "JP") cWord = pick(jpWords);
+  if (style === "IT") cWord = pick(itWords);
+  if (style === "FR") cWord = pick(frWords);
+
+  const eraMark = (era==="interwar") ? "Mk.0"
+                : (era==="ww2") ? `Mk.${randInt(1,8)}`
+                : (era==="early_coldwar") ? `Series-${randInt(1,5)}`
+                : `Block-${randInt(1,7)}`;
+
+  // A few different patterns
+  const patterns = [
+    () => `${label} “${pick(adjectives)} ${pick(animals)}” (${year})`,
+    () => `${tag} ${cWord}-${pick(animals)} ${eraMark}`,
+    () => `${pick(adjectives)} ${cWord} ${label} (${year})`,
+    () => `${label} ${pick(places)}-${randInt(1, 30)} (${year})`,
+    () => `${label} ${pick(myth)}-${randInt(1, 20)} (${year})`,
+  ];
+
+  return pick(patterns)().replace(/\s+/g, " ").trim();
+}
+
+/* ------------------ Master generate ------------------ */
+function generate(tag, year, category, subtype, mode){
+  const t = (tag||"").toUpperCase().trim() || "UNK";
+  const y = clampYear(year);
+  const er = eraFor(y);
+
+  const name = (mode === "strict")
+    ? strictDesignation(t, y, category, subtype)
+    : flavorName(t, y, category, subtype);
+
+  const pills = [
+    `Tag: ${t}`,
+    `Mode: ${mode}`,
+    `Era: ${er.replaceAll("_"," ")}`
+  ];
+
+  return {
+    name,
+    meta: `${tagToLabel(t)} • ${category.toUpperCase()} • ${subtype.toUpperCase()} • Year ${y}`,
+    pills
+  };
+}
+
+/* ------------------ UI wiring ------------------ */
+const elTag = document.getElementById("countryTag");
+const elYear = document.getElementById("year");
+const elMode = document.getElementById("mode");
+const elName = document.getElementById("name");
+const elMeta = document.getElementById("meta");
+const elTags = document.getElementById("tags");
+const elWarn = document.getElementById("warn");
+
+let last = null;
+
+function render(){
+  const tag = elTag.value;
+  const year = elYear.value;
+  const category = elCategory.value;
+  const subtype = elSubtype.value;
+  const mode = elMode.value;
+
+  const out = generate(tag, year, category, subtype, mode);
+  last = out;
+
+  elName.textContent = out.name;
+  elMeta.textContent = out.meta;
+
+  elTags.innerHTML = "";
+  out.pills.forEach(t => {
+    const d = document.createElement("div");
+    d.className = "pill";
+    d.textContent = t;
+    elTags.appendChild(d);
+  });
+
+  const typedTag = (tag||"").toUpperCase().trim();
+  const inList = TAGS.some(([t]) => t === typedTag);
+  elWarn.textContent = inList || typedTag.length === 0 ? "" : "Tag not in autocomplete list (that’s fine — mods/custom tags still work).";
+}
+
+document.getElementById("gen").addEventListener("click", render);
+document.getElementById("reroll").addEventListener("click", render);
+[elTag, elYear, elMode].forEach(el => el.addEventListener("change", render));
+elSubtype.addEventListener("change", render);
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const text = elName.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    elWarn.textContent = "Copied to clipboard.";
+    setTimeout(() => { elWarn.textContent = ""; }, 1200);
+  } catch {
+    elWarn.textContent = "Clipboard blocked by browser. Select and copy manually.";
+  }
+});
+
+// Initial render
+render();
+</script>
 </body>
 </html>
