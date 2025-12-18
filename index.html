@@ -11,7 +11,7 @@
     .card { width:min(1180px,100%); background:#121720; border:1px solid #1c2634; border-radius:18px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
     h1 { margin:0 0 8px; font-size:18px; }
     p { margin:0 0 16px; font-size:13px; opacity:.8; line-height:1.4; }
-    .grid { display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr auto; gap:12px; align-items:end; }
+    .grid { display:grid; grid-template-columns: 1.6fr 1fr 1fr 1fr auto; gap:12px; align-items:end; }
     label { display:block; font-size:12px; opacity:.8; margin-bottom:6px; }
     input, select {
       width:100%; background:#0f141c; border:1px solid #1c2634; color:#e8eef5;
@@ -27,8 +27,28 @@
     .pill { font-size:12px; opacity:.85; padding:6px 10px; border:1px solid #1c2634; border-radius:999px; background:#0b0d10; }
     .tools { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
     .ghost { background:transparent; border:1px solid #1c2634; color:#e8eef5; }
-    .hint { margin-top:12px; font-size:12px; opacity:.65; }
-    .warn { margin-top:10px; font-size:12px; opacity:.8; }
+    .hint { margin-top:8px; font-size:12px; opacity:.65; }
+    .warn { margin-top:10px; font-size:12px; opacity:.85; }
+
+    /* Searchable dropdown */
+    .picker { position: relative; }
+    .dropdown {
+      position:absolute; top: calc(100% + 6px); left:0; right:0;
+      background:#0f141c; border:1px solid #1c2634; border-radius:14px;
+      max-height: 280px; overflow:auto; z-index: 50;
+      display:none;
+    }
+    .dropdown.open { display:block; }
+    .item {
+      padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:10px;
+      border-bottom:1px solid #162031;
+    }
+    .item:last-child { border-bottom:0; }
+    .item:hover { background:#0b0d10; }
+    .tag { font-weight:900; letter-spacing:.4px; }
+    .country { opacity:.8; font-size:12px; }
+    .small { font-size:12px; opacity:.7; }
+
     @media (max-width: 1040px){ .grid{ grid-template-columns:1fr; } button{ width:100%; } }
   </style>
 </head>
@@ -36,14 +56,17 @@
   <div class="wrap">
     <div class="card">
       <h1>HOI4 Equipment Name Generator</h1>
-      <p>Search a country tag, pick category + year, toggle <b>Strict</b> vs <b>Flavor</b>, generate a random name.</p>
+      <p>Search a country tag, pick category + year, toggle <b>Strict</b> vs <b>Flavor</b>, generate <b>unique</b> names using country-accurate formatting (not real historical equipment names).</p>
 
       <div class="grid">
-        <div>
-          <label for="countryTag">Country tag (search)</label>
-          <input id="countryTag" list="countryTags" placeholder="Start typing: GER, USA, SOV, ENG..." value="GER" autocomplete="off" />
-          <datalist id="countryTags"></datalist>
-          <div class="hint">You can also type any custom tag (mods) — it will fall back gracefully.</div>
+        <div class="picker">
+          <label for="countrySearch">Country tag (searchable)</label>
+          <input id="countrySearch" placeholder="Type: GER, USA, SOV, ENG… (or any custom tag)" autocomplete="off" />
+          <div class="dropdown" id="dropdown" role="listbox" aria-label="Country tags"></div>
+          <div class="hint">
+            Tip: Click a result to lock it in. Or type any 3-letter tag (mods) and hit Generate.
+            Current selection: <span id="selTag" class="tag">GER</span> <span id="selName" class="small">(Germany)</span>
+          </div>
         </div>
 
         <div>
@@ -67,11 +90,11 @@
       </div>
 
       <div class="tools">
-        <div style="min-width:240px;">
+        <div style="min-width:260px;">
           <label for="mode">Naming mode</label>
           <select id="mode">
-            <option value="strict" selected>Strict (formats like real designations)</option>
-            <option value="flavor">Flavor (more variety, still country/era-coded)</option>
+            <option value="strict" selected>Strict (designation format, unique)</option>
+            <option value="flavor">Flavor (designation + codename)</option>
           </select>
         </div>
         <button id="copy" type="button" class="ghost">Copy name</button>
@@ -88,37 +111,32 @@
   </div>
 
 <script>
-/* ------------------ Searchable tag list (extend anytime) ------------------ */
+/* ------------------ Country tags (you can expand forever) ------------------ */
 const TAGS = [
   ["GER","Germany"], ["USA","United States"], ["SOV","Soviet Union"], ["ENG","United Kingdom"],
   ["FRA","France"], ["ITA","Italy"], ["JAP","Japan"], ["CHI","China"], ["MAN","Manchukuo"],
   ["SWE","Sweden"], ["NOR","Norway"], ["DEN","Denmark"], ["FIN","Finland"], ["ICE","Iceland"],
-  ["SPR","Spain"], ["SPB","Spain (Carlist)"], ["SPD","Spain (Republic)"], ["POR","Portugal"],
-  ["HOL","Netherlands"], ["BEL","Belgium"], ["LUX","Luxembourg"],
+  ["SPR","Spain"], ["POR","Portugal"], ["HOL","Netherlands"], ["BEL","Belgium"], ["LUX","Luxembourg"],
   ["AUS","Austria"], ["HUN","Hungary"], ["CZE","Czechoslovakia"], ["POL","Poland"], ["ROM","Romania"],
   ["YUG","Yugoslavia"], ["BUL","Bulgaria"], ["GRE","Greece"], ["ALB","Albania"], ["TUR","Turkey"],
   ["SWI","Switzerland"], ["EST","Estonia"], ["LAT","Latvia"], ["LIT","Lithuania"], ["IRE","Ireland"],
-  ["UKR","Ukraine"], ["BLR","Belarus"], ["GEO","Georgia"], ["ARM","Armenia"], ["AZR","Azerbaijan"],
   ["EGY","Egypt"], ["IRQ","Iraq"], ["IRN","Iran"], ["SAU","Saudi Arabia"], ["YEM","Yemen"],
-  ["OMA","Oman"], ["SYR","Syria"], ["JOR","Jordan"], ["ISR","Israel"],
+  ["SYR","Syria"], ["JOR","Jordan"], ["ISR","Israel"],
   ["LBA","Libya"], ["TUN","Tunisia"], ["ALG","Algeria"], ["MOR","Morocco"],
   ["SAF","South Africa"], ["ETH","Ethiopia"],
   ["CAN","Canada"], ["MEX","Mexico"], ["BRA","Brazil"], ["ARG","Argentina"], ["CHL","Chile"],
   ["COL","Colombia"], ["PER","Peru"], ["VEN","Venezuela"], ["BOL","Bolivia"], ["PAR","Paraguay"], ["URU","Uruguay"],
   ["RAJ","British Raj"], ["AST","Australia"], ["NZL","New Zealand"],
-  ["SIA","Siam/Thailand"], ["PHI","Philippines"], ["INS","Dutch East Indies/Indonesia"],
-  ["MAL","Malaya"], ["VIE","Vietnam"], ["CAM","Cambodia"], ["LAO","Laos"],
-  ["KOR","Korea"], ["MON","Mongolia"], ["TAN","Tannu Tuva"], ["AFG","Afghanistan"], ["NEP","Nepal"], ["BHU","Bhutan"],
+  ["SIA","Siam/Thailand"], ["PHI","Philippines"], ["INS","Indonesia"], ["MAL","Malaya"],
+  ["VIE","Vietnam"], ["CAM","Cambodia"], ["LAO","Laos"],
+  ["KOR","Korea"], ["MON","Mongolia"], ["TAN","Tannu Tuva"], ["AFG","Afghanistan"], ["NEP","Nepal"], ["BHU","Bhutan"]
 ];
-document.getElementById("countryTags").innerHTML =
-  TAGS.map(([t,n]) => `<option value="${t}">${n}</option>`).join("");
 
-/* ------------------ Catalog: “all the common HOI4 nameable stuff” ------------------ */
+/* ------------------ Catalog (all the common HOI4 nameables) ------------------ */
 const CATALOG = [
   { key:"tank", label:"Tank", sub:[
     ["lt","Light Tank"], ["mt","Medium Tank"], ["ht","Heavy Tank"], ["sht","Super-Heavy Tank"],
-    ["mBt","Main Battle Tank"], // for late years / mods
-    ["td","Tank Destroyer"], ["spg","Self-Propelled Gun"], ["spaa","Self-Propelled AA"]
+    ["mbt","Main Battle Tank"], ["td","Tank Destroyer"], ["spg","Self-Propelled Gun"], ["spaa","Self-Propelled AA"]
   ]},
   { key:"plane", label:"Aircraft", sub:[
     ["fighter","Fighter"], ["heavy_fighter","Heavy Fighter"], ["cas","CAS"], ["nav","Naval Bomber"],
@@ -132,7 +150,6 @@ const CATALOG = [
   { key:"sub", label:"Submarine", sub:[
     ["ss","Submarine"], ["ss_long","Long-Range Submarine"], ["ss_modern","Modern Submarine"]
   ]},
-  // Optional “flavor nameables” (useful for mods / immersion)
   { key:"ground", label:"Ground Equipment (Flavor)", sub:[
     ["rifle","Infantry Equipment"], ["ar","Support Weapon"], ["at","Anti-Tank"], ["aa","Anti-Air"],
     ["arty","Artillery"], ["truck","Truck"], ["mech","Mechanized"], ["train","Train"]
@@ -143,23 +160,20 @@ const CATALOG = [
 ];
 
 const elCategory = document.getElementById("category");
-const elSubtype = document.getElementById("subtype");
-
-function fillCategories(){
-  elCategory.innerHTML = CATALOG.map(c => `<option value="${c.key}">${c.label}</option>`).join("");
-}
+const elSubtype  = document.getElementById("subtype");
+elCategory.innerHTML = CATALOG.map(c => `<option value="${c.key}">${c.label}</option>`).join("");
 function fillSubtypes(){
   const cat = CATALOG.find(c => c.key === elCategory.value) || CATALOG[0];
   elSubtype.innerHTML = cat.sub.map(([k,l]) => `<option value="${k}">${l}</option>`).join("");
 }
-
-fillCategories();
 fillSubtypes();
 elCategory.addEventListener("change", () => { fillSubtypes(); render(); });
 
 /* ------------------ Helpers ------------------ */
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const randInt = (min, max) => Math.floor(Math.random()*(max-min+1))+min;
+const letters = ["A","B","C","D","E","F","G","H","J","K"];
+const roman = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
 
 function clampYear(y){
   y = Number(y);
@@ -178,7 +192,7 @@ function styleFor(tag){
   tag = (tag||"").toUpperCase().trim();
   if (["USA","ENG","CAN","AST","NZL","SAF","IRE"].includes(tag)) return "EN";
   if (["GER","AUS"].includes(tag)) return "DE";
-  if (["SOV","UKR","BLR","POL","CZE","HUN","ROM","BUL","YUG","GRE","LAT","LIT","EST"].includes(tag)) return "SL";
+  if (["SOV","POL","CZE","HUN","ROM","BUL","YUG","GRE","LAT","LIT","EST","UKR","BLR"].includes(tag)) return "SL";
   if (["JAP"].includes(tag)) return "JP";
   if (["ITA"].includes(tag)) return "IT";
   if (["FRA","BEL","LUX"].includes(tag)) return "FR";
@@ -190,176 +204,167 @@ function tagToLabel(tag){
   return found ? found[1] : tag;
 }
 
-/* ------------------ Strict naming primitives (country-coded) ------------------ */
+/* ------------------ Searchable dropdown (real) ------------------ */
+const elSearch = document.getElementById("countrySearch");
+const elDrop = document.getElementById("dropdown");
+const elSelTag = document.getElementById("selTag");
+const elSelName = document.getElementById("selName");
+
+let selectedTag = "GER";
+
+function openDrop(){ elDrop.classList.add("open"); }
+function closeDrop(){ elDrop.classList.remove("open"); }
+
+function renderDrop(q){
+  const query = (q||"").trim().toUpperCase();
+  const results = TAGS
+    .filter(([t,n]) => !query || t.includes(query) || n.toUpperCase().includes(query))
+    .slice(0, 80);
+
+  elDrop.innerHTML = results.map(([t,n]) => `
+    <div class="item" data-tag="${t}" data-name="${n}">
+      <div>
+        <div class="tag">${t}</div>
+        <div class="country">${n}</div>
+      </div>
+      <div class="small">Select</div>
+    </div>
+  `).join("") || `<div class="item"><div>No matches. Type a custom tag and use Generate.</div></div>`;
+}
+
+elSearch.addEventListener("focus", () => { renderDrop(elSearch.value); openDrop(); });
+elSearch.addEventListener("input", () => { renderDrop(elSearch.value); openDrop(); });
+
+elDrop.addEventListener("click", (e) => {
+  const item = e.target.closest(".item");
+  if (!item || !item.dataset.tag) return;
+  selectedTag = item.dataset.tag;
+  elSelTag.textContent = selectedTag;
+  elSelName.textContent = `(${item.dataset.name})`;
+  elSearch.value = selectedTag;
+  closeDrop();
+  render();
+});
+
+// close dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  const picker = document.querySelector(".picker");
+  if (!picker.contains(e.target)) closeDrop();
+});
+
+/* ------------------ UNIQUE naming (no historical model names) ------------------ */
+/*
+  Goal:
+  - Strict: country-accurate designation FORMAT but randomized so it doesn't match real equipment.
+  - Flavor: strict designation + a codename layer (still country-coded).
+*/
+
 function strictDesignation(tag, year, category, subtype){
-  const era = eraFor(year);
+  const y = clampYear(year);
+  const era = eraFor(y);
   const style = styleFor(tag);
 
-  // Handy pools
-  const ausf = ["A","B","C","D","E","F","G","H","J"];
-  const mk = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
-  const model = ["Model 1933","Model 1935","Model 1937","Model 1940","Model 1941","Model 1943","Model 1944"];
-  const prot = ["Prototype","Pre-series","Trial"];
+  // era-weighted ranges to keep things plausible-ish without matching real lines
+  const tankN = (era==="interwar") ? randInt(1, 40) : (era==="ww2") ? randInt(41, 180) : (era==="early_coldwar") ? randInt(80, 220) : randInt(120, 360);
+  const airN  = (era==="interwar") ? randInt(1, 50) : (era==="ww2") ? randInt(50, 450) : (era==="early_coldwar") ? randInt(80, 600) : randInt(120, 900);
+  const shipN = randInt(1, 60);
 
-  // TANKS
+  // Tanks
   if (category === "tank"){
-    if (style === "DE"){
-      if (era === "ww2"){
-        const base = pick(["Panzerkampfwagen III","Panzerkampfwagen IV","Panther","Tiger","StuG","Jagdpanther"]);
-        return `${base} Ausf. ${pick(ausf)}`;
-      }
-      return `Panzerkampfwagen ${pick(["I","II","III","IV"])} Ausf. ${pick(ausf)}`;
-    }
-    if (style === "SL"){
-      if (era === "interwar") return pick([`BT-${randInt(2,9)}`, `T-${randInt(12,28)}`]);
-      if (era === "ww2") return pick([`T-34`, `T-34-85`, `KV-1`, `IS-2`, `SU-85`, `SU-100`]);
-      if (era === "early_coldwar") return pick([`T-44`, `T-54`, `T-55`, `T-62`]);
-      return pick([`T-64`, `T-72`, `T-80`, `T-90`]);
-    }
-    if (style === "JP"){
-      const type = (era==="interwar") ? pick([89,95,97]) : (era==="ww2") ? pick([97,1,2,3,4]) : (era==="early_coldwar") ? pick([61,74]) : pick([90,10]);
-      const nick = pick(["Ha-Go","Chi-Ha","Chi-He","Chi-Nu","Chi-To","Chi-Ri","I-Go"]);
-      return `Type ${type} ${nick}`;
-    }
-    if (style === "IT"){
-      if (era === "ww2") return pick([`M13/40`, `M14/41`, `M15/42`, `P26/40`]);
-      return pick([`Carro Armato M${randInt(6,15)}/${randInt(34,40)}`, `Semovente da 75/18`]);
-    }
-    if (style === "FR"){
-      return pick([`Char B1 bis`, `SOMUA S35`, `Renault R35`, `Hotchkiss H35`]);
-    }
+    if (style === "DE") return `Pz.Kpfw. ${roman[randInt(0,7)]} Ausf. ${pick(letters)}-${tankN}`;
+    if (style === "SL") return `T-${tankN}${pick(["","A","B","M"])}`;
+    if (style === "JP") return `Type ${randInt(70, 120)} ${pick(["Ko","Otsu","Hei","Tei"])}-${tankN}`;
+    if (style === "IT") return `Carro M${randInt(10, 40)}/${String(y).slice(2)}-${tankN}`;
+    if (style === "FR") return `Char ${pick(["S","B","D","R"])}-${tankN} Mod. ${String(y).slice(2)}`;
     if (style === "EN"){
-      if (tag === "USA" || tag === "CAN"){
-        // Keep it “designation-y”
-        if (era === "interwar") return pick([`M2 Light Tank`, `M2 Medium Tank`, `T${randInt(1,30)} ${pick(prot)}`]);
-        if (era === "ww2") return pick([`M3 Stuart`, `M3 Lee`, `M4 Sherman`, `M10 Wolverine`, `M18 Hellcat`, `M26 Pershing`]);
-        if (era === "early_coldwar") return pick([`M46 Patton`, `M47 Patton`, `M48 Patton`, `M60`]);
-        return pick([`M1 Abrams`, `M1A1 Abrams`, `M1A2 Abrams`]);
-      }
-      // UK-ish
-      return pick([`${pick(["Matilda","Valentine","Churchill","Cromwell","Comet"])} Mk. ${pick(mk)}`, `A${randInt(9,45)} Mk. ${pick(mk)}`]);
+      // US/UK style without real names
+      if (tag === "USA" || tag === "CAN") return `M${tankN}${pick(["","A1","A2","E1"])} (${subtype.toUpperCase()})`;
+      return `A${tankN} Mk. ${pick(roman)} (${subtype.toUpperCase()})`;
     }
-    // Generic strict
-    return `${tag} ${subtype.toUpperCase()}-${randInt(1,99)} (${year})`;
+    return `${tag}-${subtype.toUpperCase()}-${tankN} (${y})`;
   }
 
-  // AIRCRAFT
+  // Planes
   if (category === "plane"){
-    if (style === "DE") return pick([`Bf ${randInt(100, 300)}`, `Fw ${randInt(180, 300)}`, `Ju ${randInt(80, 200)}`, `He ${randInt(100, 300)}`, (era==="ww2"?`Me ${randInt(200, 400)}`:`Do ${randInt(10, 30)}`)]);
-    if (style === "SL") return pick([`Yak-${randInt(1,15)}`, `La-${randInt(3,15)}`, `MiG-${randInt(1,31)}`, `Il-${randInt(2,40)}`, `Tu-${randInt(2,160)}`]);
-    if (style === "JP") return pick([`A6M`, `Ki-${randInt(27,100)}`, `D3A`, `B5N`]);
-    if (style === "IT") return pick([`Macchi C.${randInt(200,205)}`, `Fiat G.${randInt(50,60)}`, `SM.${randInt(79,90)}`]);
-    if (style === "FR") return pick([`D.${randInt(500,600)}`, `MB.${randInt(150,200)}`, `Potez ${randInt(60,80)}`]);
+    if (style === "DE") return `${pick(["Bf","Fw","Ju","He","Do"])} ${airN}${pick(["","A","B","C"])}-${pick(letters)}`;
+    if (style === "SL") return `${pick(["Yak","La","MiG","Il","Tu"])}-${airN}${pick(["","A","B","M"])}`;
+    if (style === "JP") return `${pick(["Ki","A","D","B"])}-${airN} ${pick(["Model","Kai"])}-${randInt(1,9)}`;
+    if (style === "IT") return `${pick(["MC","G","SM"])}.${airN}${pick(["","bis","ter"])}`;
+    if (style === "FR") return `${pick(["D","MB","LeO","Potez"])}-${airN} ${pick(["Série","Mod."])} ${String(y).slice(2)}`;
     if (style === "EN"){
-      if (tag === "USA" || tag === "CAN"){
-        if (era === "late") return pick([`F-${randInt(4,22)}`, `B-${randInt(47,2+60)}`]);
-        return pick([`P-${randInt(26,80)}`, `B-${randInt(10,60)}`]);
-      }
-      return pick([`Spitfire Mk. ${pick(["I","V","IX","XVI"])}`, `Hurricane Mk. ${pick(["I","II"])}`, `Lancaster Mk. ${pick(["I","III"])}`]);
+      if (tag === "USA" || tag === "CAN") return `${pick(["P","F","B","A"])}-${airN}${pick(["","A","B"])} (${subtype.toUpperCase()})`;
+      return `${pick(["F","B","A","T"])}.${airN} Mk.${randInt(1,12)} (${subtype.toUpperCase()})`;
     }
-    return `${tag}-${subtype.toUpperCase()}-${randInt(1,99)} (${year})`;
+    return `${tag}-${subtype.toUpperCase()}-${airN} (${y})`;
   }
 
-  // SHIPS (surface)
+  // Ships
   if (category === "ship"){
-    if (style === "DE") return `${pick(["Zerstörer","Kreuzer","Schlachtschiff","Flugzeugträger"])} ${randInt(1, 30)} (${year})`;
-    if (style === "EN") return `${pick(["HMS","USS","HMCS","HMAS"])} ${pick(["Valiant","Ark Royal","King George","Illustrious","Victorious","Dreadnought"])} (${year})`;
-    if (style === "SL") return `Project ${randInt(10,80)} ${subtype.toUpperCase()} (${year})`;
-    if (style === "JP") return `${pick(["IJN","JS"]) } ${pick(["Kagerō","Fubuki","Mogami","Yamato","Shōkaku","Sōryū"])} (${year})`;
-    return `${tag} ${subtype.toUpperCase()}-${randInt(1,40)} (${year})`;
+    if (style === "DE") return `${pick(["Z","K","S","T"])}-${shipN}${pick(["A","B","C"])} (${subtype.toUpperCase()})`;
+    if (style === "SL") return `Project ${randInt(10, 120)}-${shipN} (${subtype.toUpperCase()})`;
+    if (style === "JP") return `${pick(["No.","Model"])} ${shipN}-${randInt(1,9)} (${subtype.toUpperCase()})`;
+    if (style === "EN") return `${pick(["Class","Group"])} ${pick(letters)}-${shipN} (${subtype.toUpperCase()})`;
+    if (style === "IT") return `Classe ${pick(letters)}-${shipN} (${subtype.toUpperCase()})`;
+    if (style === "FR") return `Classe ${pick(letters)}-${shipN} (${subtype.toUpperCase()})`;
+    return `${tag}-${subtype.toUpperCase()}-H${shipN} (${y})`;
   }
 
-  // SUBS
+  // Subs
   if (category === "sub"){
-    if (style === "DE") return `U-${randInt(1,600)} (${year})`;
-    if (style === "EN") return `${pick(["T","S","U","V"])}-Class Submarine (${year})`;
-    if (style === "SL") return `Project ${randInt(200,700)} Submarine (${year})`;
-    if (style === "JP") return `I-${randInt(1,400)} (${year})`;
-    return `${tag} SS-${randInt(1,80)} (${year})`;
+    const ssN = randInt(1, 900);
+    if (style === "DE") return `U-${ssN} Typ ${pick(roman)}-${pick(letters)}`;
+    if (style === "SL") return `Project ${randInt(200, 900)}-${ssN}`;
+    if (style === "JP") return `I-${ssN} Model-${randInt(1,9)}`;
+    if (style === "EN") return `${pick(letters)}-Class SS-${ssN}`;
+    return `${tag}-SS-${ssN} (${y})`;
   }
 
-  // Flavor-only categories still get “strict-ish” formatting
-  return `${tag} ${subtype.toUpperCase()}-${randInt(1,999)} (${year})`;
+  // Flavor categories (ground/naval_eq) still get strict-like codes
+  return `${tag}-${subtype.toUpperCase()}-${randInt(100, 9999)} (${y})`;
 }
 
-/* ------------------ Flavor naming (more variety, still grounded) ------------------ */
-function flavorName(tag, year, category, subtype){
-  const era = eraFor(year);
+function codenameFor(tag){
   const style = styleFor(tag);
-
-  const adjectives = ["Iron","Steel","Thunder","Storm","Vigilant","Resolute","Crimson","Midnight","Rapid","Silent","Valiant","Feral","Dire","Arctic","Desert"];
-  const animals = ["Wolf","Bear","Eagle","Falcon","Raven","Tiger","Lion","Viper","Shark","Orca","Panther","Fox","Stag","Boar","Serpent"];
-  const myth = ["Ares","Thor","Odin","Hades","Mars","Athena","Hera","Freya","Ra","Anubis","Set","Perun"];
-  const places = ["Danube","Rhine","Volga","Dnieper","Sakura","Adriatic","Baltic","Pacific","Atlantic","Carpathian","Sahara","Ardennes","Aegean"];
-
-  // Country-coded flavor bits
-  const deWords = ["Sturm","Donner","Eisen","Blitz","Adler","Löwe","Seewolf"];
-  const slWords = ["Grom","Burevestnik","Sokol","Medved","Buran","Varyag","Zarya"];
-  const jpWords = ["Kaze","Tora","Ryu","Kumo","Haya","Sakura","Kitsune"];
-  const itWords = ["Fulmine","Leone","Aquila","Folgore","Tempesta","Lupo"];
-  const frWords = ["Vaillant","Aigle","Foudre","Renard","Lynx","Glorieuse"];
-  const enWords = ["Vanguard","Valiant","Indomitable","Gallant","Defiant","Bulldog"];
-
-  const roleLabel = {
-    tank: { lt:"Light Tank", mt:"Medium Tank", ht:"Heavy Tank", sht:"Super-Heavy Tank", mBt:"MBT", td:"Tank Destroyer", spg:"SPG", spaa:"SPAA" },
-    plane:{ fighter:"Fighter", heavy_fighter:"Heavy Fighter", cas:"CAS", nav:"Naval Bomber", tac:"Tactical Bomber", strat:"Strategic Bomber", recon:"Recon", jet_fighter:"Jet Fighter", jet_bomber:"Jet Bomber" },
-    ship: { dd:"Destroyer", cl:"Light Cruiser", ca:"Heavy Cruiser", bc:"Battlecruiser", bb:"Battleship", cv:"Carrier" },
-    sub:  { ss:"Submarine", ss_long:"Long-range Sub", ss_modern:"Modern Sub" },
-    ground:{ rifle:"Infantry Eq.", ar:"Support Weapon", at:"Anti-Tank", aa:"Anti-Air", arty:"Artillery", truck:"Truck", mech:"Mechanized", train:"Train" },
-    naval_eq:{ torp:"Torpedo", depth:"Depth Charge", mine:"Naval Mine", radar:"Radar Set" }
-  };
-
-  const label = (roleLabel[category] && roleLabel[category][subtype]) ? roleLabel[category][subtype] : subtype;
-
-  let cWord = pick(enWords);
-  if (style === "DE") cWord = pick(deWords);
-  if (style === "SL") cWord = pick(slWords);
-  if (style === "JP") cWord = pick(jpWords);
-  if (style === "IT") cWord = pick(itWords);
-  if (style === "FR") cWord = pick(frWords);
-
-  const eraMark = (era==="interwar") ? "Mk.0"
-                : (era==="ww2") ? `Mk.${randInt(1,8)}`
-                : (era==="early_coldwar") ? `Series-${randInt(1,5)}`
-                : `Block-${randInt(1,7)}`;
-
-  // A few different patterns
-  const patterns = [
-    () => `${label} “${pick(adjectives)} ${pick(animals)}” (${year})`,
-    () => `${tag} ${cWord}-${pick(animals)} ${eraMark}`,
-    () => `${pick(adjectives)} ${cWord} ${label} (${year})`,
-    () => `${label} ${pick(places)}-${randInt(1, 30)} (${year})`,
-    () => `${label} ${pick(myth)}-${randInt(1, 20)} (${year})`,
-  ];
-
-  return pick(patterns)().replace(/\s+/g, " ").trim();
+  const en = ["Vanguard","Sentinel","Bulldog","Raven","Ironclad","Torch","Hawkeye","Trident","Aegis","Thunder"];
+  const de = ["Sturm","Donner","Eisen","Blitz","Adler","Seewolf","Nebel","Wacht","Kobalt","Klinge"];
+  const sl = ["Grom","Sokol","Zarya","Buran","Vityaz","Rusalka","Klin","Bastion","Volna","Medved"];
+  const jp = ["Kaze","Tora","Ryu","Kumo","Haya","Sakura","Kitsune","Kurogane","Shiden","Raiden"];
+  const it = ["Fulmine","Aquila","Leone","Folgore","Tempesta","Lupo","Vespro","Ardito","Bruno","Vento"];
+  const fr = ["Foudre","Aigle","Vaillant","Renard","Lynx","Orage","Vigilant","Fer","Gloire","Sable"];
+  const gen = ["Atlas","Nova","Specter","Bastion","Viper","Orion","Apex","Cobalt","Warden","Tempest"];
+  if (style==="DE") return pick(de);
+  if (style==="SL") return pick(sl);
+  if (style==="JP") return pick(jp);
+  if (style==="IT") return pick(it);
+  if (style==="FR") return pick(fr);
+  if (style==="EN") return pick(en);
+  return pick(gen);
 }
 
-/* ------------------ Master generate ------------------ */
+function flavorName(tag, year, category, subtype){
+  const base = strictDesignation(tag, year, category, subtype);
+  const code = codenameFor(tag);
+  const tail = pick(["I","II","III","IV","V","VI","VII","VIII","IX","X"]);
+  return `${base} “${code}-${tail}”`;
+}
+
+/* ------------------ Generate + UI ------------------ */
 function generate(tag, year, category, subtype, mode){
   const t = (tag||"").toUpperCase().trim() || "UNK";
   const y = clampYear(year);
-  const er = eraFor(y);
+  const era = eraFor(y);
 
   const name = (mode === "strict")
     ? strictDesignation(t, y, category, subtype)
     : flavorName(t, y, category, subtype);
 
-  const pills = [
-    `Tag: ${t}`,
-    `Mode: ${mode}`,
-    `Era: ${er.replaceAll("_"," ")}`
-  ];
-
   return {
     name,
-    meta: `${tagToLabel(t)} • ${category.toUpperCase()} • ${subtype.toUpperCase()} • Year ${y}`,
-    pills
+    meta: `${tagToLabel(t)} • ${category.toUpperCase()} • ${subtype.toUpperCase()} • Year ${y} • ${mode.toUpperCase()} • ${era.replaceAll("_"," ").toUpperCase()}`,
+    pills: [`Tag: ${t}`, `Mode: ${mode}`, `Era: ${era.replaceAll("_"," ")}`]
   };
 }
 
-/* ------------------ UI wiring ------------------ */
-const elTag = document.getElementById("countryTag");
 const elYear = document.getElementById("year");
 const elMode = document.getElementById("mode");
 const elName = document.getElementById("name");
@@ -367,18 +372,24 @@ const elMeta = document.getElementById("meta");
 const elTags = document.getElementById("tags");
 const elWarn = document.getElementById("warn");
 
-let last = null;
+function getEffectiveTag(){
+  // If they typed a tag, use it. Otherwise use the selectedTag.
+  const typed = (elSearch.value || "").toUpperCase().trim();
+  if (typed.length >= 3) return typed.slice(0,3);
+  return selectedTag;
+}
 
 function render(){
-  const tag = elTag.value;
+  const tag = getEffectiveTag();
   const year = elYear.value;
   const category = elCategory.value;
   const subtype = elSubtype.value;
   const mode = elMode.value;
 
-  const out = generate(tag, year, category, subtype, mode);
-  last = out;
+  elSelTag.textContent = tag;
+  elSelName.textContent = `(${tagToLabel(tag)})`;
 
+  const out = generate(tag, year, category, subtype, mode);
   elName.textContent = out.name;
   elMeta.textContent = out.meta;
 
@@ -390,14 +401,13 @@ function render(){
     elTags.appendChild(d);
   });
 
-  const typedTag = (tag||"").toUpperCase().trim();
-  const inList = TAGS.some(([t]) => t === typedTag);
-  elWarn.textContent = inList || typedTag.length === 0 ? "" : "Tag not in autocomplete list (that’s fine — mods/custom tags still work).";
+  const inList = TAGS.some(([t]) => t === tag);
+  elWarn.textContent = inList ? "" : "Tag not in built-in list (fine for mods/custom tags). Naming will use generic or style fallback.";
 }
 
 document.getElementById("gen").addEventListener("click", render);
 document.getElementById("reroll").addEventListener("click", render);
-[elTag, elYear, elMode].forEach(el => el.addEventListener("change", render));
+[elYear, elMode, elSubtype].forEach(el => el.addEventListener("change", render));
 elSubtype.addEventListener("change", render);
 
 document.getElementById("copy").addEventListener("click", async () => {
@@ -411,7 +421,9 @@ document.getElementById("copy").addEventListener("click", async () => {
   }
 });
 
-// Initial render
+// initial state
+elSearch.value = selectedTag;
+renderDrop("");
 render();
 </script>
 </body>
