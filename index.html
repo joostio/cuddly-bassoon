@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HOI4 Equipment Name Generator</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #0b0d10;
+      color: #e8eef5;
+    }
+    .wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .card {
+      width: min(980px, 100%);
+      background: #121720;
+      border: 1px solid #1c2634;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    p  { margin: 0 0 16px; opacity: .8; font-size: 13px; line-height: 1.4; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+    label { display:block; font-size: 12px; opacity: .8; margin-bottom: 6px; }
+    select, input {
+      width: 100%;
+      background: #0f141c;
+      border: 1px solid #1c2634;
+      color: #e8eef5;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    button {
+      background: #2b7cff;
+      color: white;
+      border: 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { filter: brightness(1.05); }
+    .out {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid #1c2634;
+      background: #0f141c;
+    }
+    .name { font-size: 20px; font-weight: 800; letter-spacing: .2px; }
+    .meta { margin-top: 6px; font-size: 12px; opacity: .8; }
+    .row { display:flex; gap:10px; margin-top: 10px; flex-wrap: wrap; }
+    .pill {
+      font-size: 12px; opacity: .85;
+      padding: 6px 10px;
+      border: 1px solid #1c2634;
+      border-radius: 999px;
+      background: #0b0d10;
+    }
+    .hint { margin-top: 12px; font-size: 12px; opacity: .65; }
+    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } button { width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>HOI4 Equipment Name Generator</h1>
+      <p>Pick a country, equipment type, and year. You’ll get a random, era-flavored military name you can paste into Hearts of Iron IV.</p>
+
+      <div class="grid">
+        <div>
+          <label for="country">Country</label>
+          <select id="country">
+            <option value="USA">United States</option>
+            <option value="GER">Germany</option>
+            <option value="UK">United Kingdom</option>
+            <option value="USSR">Soviet Union</option>
+            <option value="JPN">Japan</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="type">Equipment</label>
+          <select id="type">
+            <option value="tank">Tank</option>
+            <option value="plane">Plane</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="year">Year</label>
+          <input id="year" type="number" min="1900" max="2100" value="1940" />
+        </div>
+
+        <div>
+          <button id="gen" type="button">Generate</button>
+        </div>
+      </div>
+
+      <div class="out" id="out" aria-live="polite">
+        <div class="name" id="name">—</div>
+        <div class="meta" id="meta">Choose options and hit Generate.</div>
+        <div class="row" id="tags"></div>
+        <div class="hint">Tip: you can edit the name lists inside this file to match your preferred level of historical accuracy.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Helpers ----
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const clampYear = (y) => {
+      if (!Number.isFinite(y)) return 1936;
+      if (y < 1900) return 1900;
+      if (y > 2100) return 2100;
+      return Math.trunc(y);
+    };
+
+    // Era buckets: tweak as you like for HOI4 mods/timeframes
+    function eraFor(year) {
+      if (year <= 1935) return "early";
+      if (year <= 1945) return "ww2";
+      if (year <= 1959) return "post";
+      return "late";
+    }
+
+    // ---- Name logic ----
+    // This generator is "era-flavored" and tries to sound plausible.
+    // You can swap the lists for exact historical series if you prefer.
+    const DATA = {
+      USA: {
+        label: "United States",
+        tank: {
+          early: () => `M${pick([1,2,3,4,5,6,7])} ${pick(["Combat Car","Light Tank","Medium Tank"])}`,
+          ww2:   () => `${pick(["M3","M4","M5","M10","M18","M26"])} ${pick(["Stuart","Lee","Sherman","Wolverine","Hellcat","Pershing"])}`,
+          post:  () => `${pick(["M46","M47","M48","M60"])} ${pick(["Patton","Patton","Patton","Main Battle Tank"])}`,
+          late:  () => `${pick(["M1","M1A1","M1A2"])} ${pick(["Abrams","Abrams","SEP"])}`,
+        },
+        plane: {
+          early: () => `${pick(["Curtiss","Boeing","Douglas","Grumman"])} ${pick(["P-26","P-35","P-36","B-10","A-17"])}`,
+          ww2:   () => `${pick(["P-38","P-39","P-40","P-47","P-51","B-17","B-24","B-25","B-29","F4F","F6F","F4U"])} ${pick(["Lightning","Airacobra","Warhawk","Thunderbolt","Mustang","Flying Fortress","Liberator","Mitchell","Superfortress","Wildcat","Hellcat","Corsair"])}`,
+          post:  () => `${pick(["F-80","F-84","F-86","B-47","B-52"]) } ${pick(["Shooting Star","Thunderjet","Sabre","Stratojet","Stratofortress"])}`,
+          late:  () => `${pick(["F-4","F-14","F-15","F-16","F/A-18","B-2"]) } ${pick(["Phantom II","Tomcat","Eagle","Fighting Falcon","Hornet","Spirit"])}`,
+        }
+      },
+
+      GER: {
+        label: "Germany",
+        tank: {
+          early: () => `Panzerkampfwagen ${pick(["I","II","III","IV"])} Ausf. ${pick(["A","B","C","D","E","F"])}`,
+          ww2:   () => `${pick(["Panzer IV","Panther","Tiger I","Tiger II","StuG III","Jagdpanther"])} ${pick(["Ausf. H","Ausf. G","Ausf. E","Ausf. B","Ausf. G","Ausf. G"])}`,
+          post:  () => `${pick(["Leopard 1","M48 (Bundeswehr)","Kanonenjagdpanzer"])} ${pick(["A1","A2","—"])}`,
+          late:  () => `${pick(["Leopard 2","Leopard 2A4","Leopard 2A6","Leopard 2A7"])} ${pick(["—","—","—","—"])}`,
+        },
+        plane: {
+          early: () => `${pick(["Heinkel","Junkers","Dornier","Messerschmitt"])} ${pick(["He 51","Ju 52","Do 17","Bf 109"])}`,
+          ww2:   () => `${pick(["Bf 109","Fw 190","Me 262","Ju 87","Ju 88","He 111"])} ${pick(["—","—","Schwalbe","Stuka","—","—"])}`,
+          post:  () => `${pick(["F-84F (Luftwaffe)","F-86 (Luftwaffe)","G.91"])} ${pick(["—","—","—"])}`,
+          late:  () => `${pick(["F-4F","Tornado","Eurofighter"])} ${pick(["Phantom II","IDS","Typhoon"])}`,
+        }
+      },
+
+      UK: {
+        label: "United Kingdom",
+        tank: {
+          early: () => `${pick(["Vickers","Cruiser","Infantry Tank"])} Mk. ${pick(["I","II","III","IV"])}`,
+          ww2:   () => `${pick(["Matilda II","Valentine","Churchill","Cromwell","Comet"])} Mk. ${pick(["II","III","IV","VII","I"])}`,
+          post:  () => `${pick(["Centurion","Conqueror"])} Mk. ${pick(["3","5","8","—"])}`,
+          late:  () => `${pick(["Chieftain","Challenger 1","Challenger 2"])} ${pick(["Mk. 5","Mk. 10","—"])}`,
+        },
+        plane: {
+          early: () => `${pick(["Hawker","Supermarine","Bristol","Avro"])} ${pick(["Fury","Gladiator","Blenheim","Anson"])}`,
+          ww2:   () => `${pick(["Spitfire","Hurricane","Mosquito","Lancaster","Typhoon","Tempest"])} Mk. ${pick(["I","V","IX","XVI","—","—"])}`,
+          post:  () => `${pick(["Meteor","Vampire","Canberra"])} ${pick(["F.3","FB.5","B.2"])}`,
+          late:  () => `${pick(["Harrier","Tornado","Typhoon"])} ${pick(["GR.3","GR.4","FGR.4"])}`,
+        }
+      },
+
+      USSR: {
+        label: "Soviet Union",
+        tank: {
+          early: () => `${pick(["T-26","BT-5","BT-7"])} ${pick(["Model 1933","Model 1935","Model 1937"])}`,
+          ww2:   () => `${pick(["T-34","T-34-85","KV-1","IS-2","SU-76","SU-85","SU-100"])} ${pick(["Model 1941","Model 1943","Model 1942","Model 1944","—","—","—"])}`,
+          post:  () => `${pick(["T-44","T-54","T-55","T-62"])} ${pick(["—","—","—","—"])}`,
+          late:  () => `${pick(["T-64","T-72","T-80","T-90"])} ${pick(["A","B","U","—"])}`,
+        },
+        plane: {
+          early: () => `${pick(["Polikarpov","Tupolev","Ilyushin"])} ${pick(["I-15","I-16","SB-2","DB-3"])}`,
+          ww2:   () => `${pick(["Yak-1","Yak-3","Yak-9","La-5","La-7","Il-2","Pe-2"])} ${pick(["—","—","—","FN","—","Shturmovik","—"])}`,
+          post:  () => `${pick(["MiG-15","MiG-17","MiG-19","Tu-16","Tu-95"])} ${pick(["—","—","—","Badger","Bear"])}`,
+          late:  () => `${pick(["MiG-21","MiG-23","MiG-29","Su-27","Su-25"])} ${pick(["—","—","—","Flanker","Frogfoot"])}`,
+        }
+      },
+
+      JPN: {
+        label: "Japan",
+        tank: {
+          early: () => `Type ${pick([89,95,97])} ${pick(["I-Go","Ha-Go","Chi-Ha"])}`,
+          ww2:   () => `Type ${pick([97,1,2,3,4])} ${pick(["Chi-Ha","Chi-He","Chi-Nu","Chi-To","Chi-Ri"])}`,
+          post:  () => `${pick(["STA-1","STA-2","Type 61"])}`,
+          late:  () => `${pick(["Type 74","Type 90","Type 10"])}`,
+        },
+        plane: {
+          early: () => `${pick(["Nakajima","Mitsubishi","Aichi","Kawasaki"])} ${pick(["Ki-10","Ki-27","A5M","D1A"])}`,
+          ww2:   () => `${pick(["A6M","Ki-43","Ki-61","Ki-84","D3A","B5N","G4M"])} ${pick(["Zero","Hayabusa","Hien","Hayate","Val","Kate","Betty"])}`,
+          post:  () => `${pick(["F-86F (JASDF)","F-104J","F-1"])} ${pick(["Sabre","Starfighter","—"])}`,
+          late:  () => `${pick(["F-4EJ","F-15J","F-2"])} ${pick(["Phantom II","Eagle","—"])}`,
+        }
+      }
+    };
+
+    function generateName(countryCode, type, year) {
+      const y = clampYear(year);
+      const era = eraFor(y);
+      const c = DATA[countryCode];
+      if (!c || !c[type] || !c[type][era]) return { name: "No data for that selection.", meta: "" };
+
+      const name = c[type][era]().replace(/\s+/g, " ").trim();
+      const meta = `${c.label} • ${type.toUpperCase()} • Year ${y} • Era: ${era.toUpperCase()}`;
+
+      const tags = [];
+      if (type === "tank") tags.push("Armor");
+      if (type === "plane") tags.push("Air");
+      if (era === "ww2") tags.push("WWII");
+      if (era === "early") tags.push("Interwar");
+      if (era === "post") tags.push("Early Cold War");
+      if (era === "late") tags.push("Late Cold War+");
+
+      return { name, meta, tags };
+    }
+
+    // ---- UI wiring ----
+    const elCountry = document.getElementById("country");
+    const elType = document.getElementById("type");
+    const elYear = document.getElementById("year");
+    const elName = document.getElementById("name");
+    const elMeta = document.getElementById("meta");
+    const elTags = document.getElementById("tags");
+    const elBtn = document.getElementById("gen");
+
+    function render() {
+      const country = elCountry.value;
+      const type = elType.value;
+      const year = Number(elYear.value);
+      const out = generateName(country, type, year);
+
+      elName.textContent = out.name;
+      elMeta.textContent = out.meta || "";
+
+      elTags.innerHTML = "";
+      (out.tags || []).forEach(t => {
+        const d = document.createElement("div");
+        d.className = "pill";
+        d.textContent = t;
+        elTags.appendChild(d);
+      });
+    }
+
+    elBtn.addEventListener("click", render);
+    [elCountry, elType, elYear].forEach(el => el.addEventListener("change", render));
+
+    // First render
+    render();
+  </script>
+</body>
+</html>
